@@ -26,7 +26,7 @@ namespace ImageTool
         }
 
         private void BtnSaveImages_Click(object sender, EventArgs e)
-        {            
+        {
             try
             {
                 if (finalImage.Height == 0 || finalImage.Width == 0)
@@ -40,8 +40,14 @@ namespace ImageTool
             }
             catch (Exception ex)
             {
+                MessageBox.Show("Save image error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 return;
             }
+        }
+
+        private void ErrorMessageBox(string m, Exception ex)
+        {
+            MessageBox.Show(m + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
         }
 
         private void BtnOpenFiles_Click(object sender, EventArgs e)
@@ -57,28 +63,21 @@ namespace ImageTool
                 {
                     Image newImage = new Bitmap(100, 1000);
                     Graphics g = Graphics.FromImage(newImage);
-                    int count = 0;
                     foreach (String file in openFileDialogImages.FileNames)
                     {
+                        //Testing code
                         try
                         {
                             //List all files
-                            this.textFiles.Text += file + ", ";
-
-                            
                             Image loadedImage = Image.FromFile(file, true);
-                            int w = (100 - loadedImage.Width) / 2;
-                            int h = (100 - loadedImage.Height) / 2;
-                            g.DrawImage(loadedImage, new Point(w, h));
-
-
-
+                            int x = (loadedImage.Width - 100) / 2;
+                            int y = (loadedImage.Height - 100) / 2;
+                            g.DrawImage(loadedImage, new Rectangle(0, 0, 100, 100), x, y, 100, 100, GraphicsUnit.Pixel);
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show("Load images error.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                            this.ErrorMessageBox("Draw images error: ", ex);
                         }
-                        count++;
                     }
                     this.flowLayoutPanelImages.Controls.Clear();
                     PictureBox p = new PictureBox();
@@ -93,21 +92,23 @@ namespace ImageTool
                 {
                     int frameWidth = 0;
                     int frameHeight = 0;
+
                     try
                     {
                         frameWidth = Int32.Parse(this.tbCutWidth.Text);
                         frameHeight = Int32.Parse(this.tbCutHeight.Text);
+
+                        //Get file list
                         foreach (String file in openFileDialogImages.FileNames)
-                        {
-                                this.textFiles.Text += file + ", ";
-                                fileArray.Add(file);
-                        }
+                            fileArray.Add(file);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("Frame size error.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+
+                        this.ErrorMessageBox("Process images error: ", ex);
                         return;
                     }
+
 
                     //Sort the list
                     fileArray = fileArray.OrderBy(q => q).ToList();
@@ -118,41 +119,30 @@ namespace ImageTool
                     finalImage = new Bitmap(finalWidth, finalHeight);
                     Graphics g = Graphics.FromImage(finalImage);
 
-                    int firstHeight = 0;
-                    int firstWidth = 0;
-                    try
-                    {
-                        Image loadedImage = Image.FromFile(fileArray[0]);
-                        firstHeight = (frameHeight - loadedImage.Height)/2;
-                        firstWidth = (frameWidth - loadedImage.Width) / 2;
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("Load images error.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                        return;
-                    }
-
-                    if (firstHeight > 0 || firstWidth > 0)
-                    {
-                        MessageBox.Show("Cut image error.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                        return;
-                    }
-                        
-
+                    //Draw new image
                     this.textLog.Text = "";
-                    int lastHeight = firstHeight;
+                    int lastHeight = 0;
                     foreach (string f in fileArray)
                     {
                         this.textLog.Text += f + "\n";
                         try
                         {
-                            Image loadedImage = Image.FromFile(f);
-                            g.DrawImage(loadedImage, new Point(firstWidth, lastHeight));
+                            Image loadedImage = Image.FromFile(f, true);
+                            int x = (loadedImage.Width - frameWidth) / 2;
+                            int y = (loadedImage.Height - frameHeight) / 2;
+                            g.DrawImage(loadedImage,
+                                new Rectangle(0, lastHeight, frameWidth, frameHeight),
+                                x,
+                                y,
+                                frameWidth,
+                                frameHeight,
+                                GraphicsUnit.Pixel
+                            );
                             lastHeight += frameHeight;
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show("Load images error.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                            this.ErrorMessageBox("Draw images error: ", ex);
                             return;
                         }
                     }
@@ -164,9 +154,6 @@ namespace ImageTool
                     {
                         try
                         {
-                            //List all files
-                            this.textFiles.Text += file + ", ";
-
                             //Calculate total width and height
                             Image loadedImage = Image.FromFile(file, true);
                             if (loadedImage.Width > finalWidth)
@@ -210,9 +197,6 @@ namespace ImageTool
                 pb.Width = this.finalImage.Width;
                 pb.Image = this.finalImage;
                 this.flowLayoutPanelImages.Controls.Add(pb);
-
-                this.textLog.Text += "W: " + finalWidth.ToString() + "\n";
-                this.textLog.Text += "H: " + finalHeight.ToString() + "\n";
             }
         }
     }
